@@ -64,7 +64,7 @@ class MainWindow:
 
         # App title with a more elegant look
         title_label = ttk.Label(main_frame,
-                                text="File Renamer & Organizer",
+                                text="Pookie Helper: I Love My Gf",
                                 font=('Verdana', 14, 'bold'),
                                 foreground=self.colors.get("primary", "#89CFF0"))
         title_label.pack(pady=(0, 15))
