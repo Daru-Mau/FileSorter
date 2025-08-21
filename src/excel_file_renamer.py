@@ -149,23 +149,80 @@ class ExcelFileRenamerApp:
             main_frame, text="Manual Rename", padding="10")
         manual_frame.pack(fill=X, pady=5)
 
+        # Pattern builder section
+        pattern_frame = ttk.LabelFrame(
+            manual_frame, text="Pattern Builder", padding="5")
+        pattern_frame.grid(row=0, column=0, columnspan=4,
+                           sticky="ew", padx=5, pady=5)
+
+        # Columns selection
+        ttk.Label(pattern_frame, text="Columns to include:").grid(
+            row=0, column=0, sticky=W, pady=2)
+
+        # Available columns dropdown
+        self.available_columns = ttk.Combobox(
+            pattern_frame, width=15, state="readonly")
+        self.available_columns.grid(row=0, column=1, padx=5, pady=2)
+
+        # Add column button
+        ttk.Button(pattern_frame, text="Add Column", command=self.add_column_to_pattern).grid(
+            row=0, column=2, padx=5, pady=2)
+
+        # Pattern display
+        ttk.Label(pattern_frame, text="Pattern:").grid(
+            row=1, column=0, sticky=W, pady=2)
+        self.pattern_var = StringVar()
+        pattern_entry = ttk.Entry(
+            pattern_frame, textvariable=self.pattern_var, width=40)
+        pattern_entry.grid(row=1, column=1, columnspan=2,
+                           padx=5, pady=2, sticky="ew")
+
+        # Reset pattern button
+        ttk.Button(pattern_frame, text="Reset", command=self.reset_pattern).grid(
+            row=1, column=3, padx=5, pady=2)
+
+        # Separator selection
+        ttk.Label(pattern_frame, text="Separator:").grid(
+            row=2, column=0, sticky=W, pady=2)
+        self.separator_var = StringVar(value="-")
+        separator_options = ["-", "_", ".", " ", ",", ";"]
+        separator_combo = ttk.Combobox(pattern_frame, textvariable=self.separator_var,
+                                       values=separator_options, width=5)
+        separator_combo.grid(row=2, column=1, padx=5, pady=2, sticky="w")
+
+        # Apply pattern button
+        ttk.Button(pattern_frame, text="Apply Pattern", command=self.apply_pattern).grid(
+            row=2, column=2, padx=5, pady=2)
+
+        # Common patterns
+        ttk.Label(pattern_frame, text="Common patterns:").grid(
+            row=3, column=0, sticky=W, pady=2)
+        common_patterns = ["ID-ProjectName", "ProjectName-ID",
+                           "ID-Status", "Date-ID-ProjectName"]
+        self.common_patterns_combo = ttk.Combobox(
+            pattern_frame, values=common_patterns, width=20)
+        self.common_patterns_combo.grid(
+            row=3, column=1, columnspan=2, padx=5, pady=2, sticky="ew")
+        self.common_patterns_combo.bind(
+            "<<ComboboxSelected>>", self.select_common_pattern)
+
         # Manual rename entry
         ttk.Label(manual_frame, text="Custom Filename:").grid(
-            row=0, column=0, sticky=W, pady=5)
+            row=1, column=0, sticky=W, pady=5)
         self.manual_filename = StringVar()
         self.manual_entry = ttk.Entry(
             manual_frame, textvariable=self.manual_filename, width=40)
-        self.manual_entry.grid(row=0, column=1, padx=5, pady=5, sticky=W)
+        self.manual_entry.grid(row=1, column=1, padx=5, pady=5, sticky=W)
 
         # Keep extension checkbox
         self.keep_extension = tk.BooleanVar(value=True)
         ttk.Checkbutton(manual_frame, text="Keep original extension", variable=self.keep_extension).grid(
-            row=0, column=2, padx=5, pady=5, sticky=W)
+            row=1, column=2, padx=5, pady=5, sticky=W)
 
         # Manual rename button
         self.manual_rename_button = ttk.Button(manual_frame, text="Apply Manual Rename",
                                                command=self.manual_rename, state=tk.DISABLED)
-        self.manual_rename_button.grid(row=0, column=3, padx=5, pady=5)
+        self.manual_rename_button.grid(row=1, column=3, padx=5, pady=5)
 
         # Bottom section - actions
         action_frame = ttk.Frame(main_frame)
@@ -264,6 +321,9 @@ class ExcelFileRenamerApp:
 
             self.status_var.set(
                 f"Loaded {len(self.excel_data)} rows from Excel")
+
+            # Update available columns for pattern builder
+            self.update_available_columns()
 
         except Exception as e:
             messagebox.showerror(
@@ -581,6 +641,98 @@ class ExcelFileRenamerApp:
         except Exception as e:
             messagebox.showerror("Error", f"Failed to rename file: {str(e)}")
             self.status_var.set("Error renaming file")
+
+    def add_column_to_pattern(self):
+        """Add the selected column to the pattern"""
+        if not self.available_columns.get():
+            messagebox.showinfo("Info", "Please select a column to add")
+            return
+
+        column_name = self.available_columns.get()
+
+        # Get current pattern
+        current_pattern = self.pattern_var.get()
+
+        # Add separator if needed
+        if current_pattern:
+            current_pattern += self.separator_var.get()
+
+        # Add the column name
+        self.pattern_var.set(current_pattern + column_name)
+
+    def reset_pattern(self):
+        """Reset the pattern to empty"""
+        self.pattern_var.set("")
+
+    def select_common_pattern(self, event):
+        """Select a common pattern from the dropdown"""
+        pattern = self.common_patterns_combo.get()
+        if pattern:
+            self.pattern_var.set(pattern)
+
+    def apply_pattern(self):
+        """Apply the current pattern to create a filename"""
+        if not self.selected_file or not self.excel_tree.selection():
+            messagebox.showerror("Error", "No file or Excel entry selected")
+            return
+
+        if not self.pattern_var.get():
+            messagebox.showerror(
+                "Error", "Pattern is empty. Please add columns to your pattern.")
+            return
+
+        # Get Excel row data
+        selected_item = self.excel_tree.selection()[0]
+        values = self.excel_tree.item(selected_item)["values"]
+        columns = list(self.excel_data.columns)
+        excel_data_dict = {columns[i]: values[i] for i in range(len(columns))}
+
+        # Parse the pattern
+        pattern_parts = self.pattern_var.get().split(self.separator_var.get())
+
+        # Build the filename from pattern parts
+        filename_parts = []
+        for part in pattern_parts:
+            if part in excel_data_dict:
+                # Clean the value - remove special characters
+                value = str(excel_data_dict[part])
+                # Replace invalid filename chars
+                value = re.sub(r'[\\/*?:"<>|]', '_', value)
+                filename_parts.append(value)
+            else:
+                messagebox.showwarning(
+                    "Warning", f"Column '{part}' not found in Excel data")
+                return
+
+        # Join the parts with the separator
+        custom_name = self.separator_var.get().join(filename_parts)
+
+        # Handle empty result
+        if not custom_name:
+            messagebox.showerror("Error", "Generated filename is empty")
+            return
+
+        # Update the manual filename field
+        self.manual_filename.set(custom_name)
+
+        # Preview the result
+        extension = self.selected_file["extension"]
+        if self.keep_extension.get():
+            preview = f"{custom_name}{extension}"
+        else:
+            preview = custom_name
+
+        messagebox.showinfo("Pattern Applied",
+                            f"Pattern applied successfully!\n\nProposed filename: {preview}\n\n"
+                            f"Click 'Apply Manual Rename' to rename the file.")
+
+    def update_available_columns(self):
+        """Update available columns dropdown based on loaded Excel data"""
+        if self.excel_data is not None:
+            columns = list(self.excel_data.columns)
+            self.available_columns["values"] = columns
+            if columns:
+                self.available_columns.current(0)
 
 
 def main():
