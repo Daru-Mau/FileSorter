@@ -26,17 +26,25 @@ sys.path.insert(0, os.path.abspath(
 class MainWindow:
     """Main window for the Excel File Renamer application"""
 
-    def __init__(self, root):
+    def __init__(self, root, theme_colors=None):
         """
         Initialize the main window
 
         Args:
             root: Tkinter root window
+            theme_colors: Optional dictionary containing theme colors
         """
         self.root = root
-        self.root.title("Excel-Based File Renamer")
+        self.root.title("File Renamer & Organizer")
         self.root.geometry("1100x700")
         self.root.minsize(900, 600)
+
+        # Store theme colors for use in UI components
+        self.colors = theme_colors or {
+            "primary": "#89CFF0",      # Default pastel blue if no theme provided
+            "text": "#4A4A4A",         # Dark gray
+            "background": "#FFFFFF",   # White
+        }
 
         self.source_folder = StringVar()
         self.excel_file_path = StringVar()
@@ -53,6 +61,13 @@ class MainWindow:
         # Main frame
         main_frame = ttk.Frame(self.root, padding="10")
         main_frame.pack(fill=BOTH, expand=True)
+
+        # App title with a more elegant look
+        title_label = ttk.Label(main_frame,
+                                text="File Renamer & Organizer",
+                                font=('Verdana', 14, 'bold'),
+                                foreground=self.colors.get("primary", "#89CFF0"))
+        title_label.pack(pady=(0, 15))
 
         # Top section - file and excel selection
         top_frame = ttk.LabelFrame(
