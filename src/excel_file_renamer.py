@@ -27,9 +27,11 @@ class ExcelFileRenamerApp:
         self.source_folder = StringVar()
         self.excel_file_path = StringVar()
         self.search_term = StringVar()
+        self.file_extension_filter = StringVar(value="All Files")
 
         self.selected_file = None
         self.file_list_data = []
+        self.all_files_data = []  # Store all files before filtering
         self.excel_data = None
         self.name_column = StringVar()
         self.id_column = StringVar()
@@ -92,6 +94,59 @@ class ExcelFileRenamerApp:
             excel_map_frame, textvariable=self.date_column, width=20)
         self.date_column_combo.grid(row=0, column=5, padx=5, pady=5)
 
+        # Pattern builder section - moved to the top
+        pattern_frame = ttk.LabelFrame(
+            main_frame, text="Pattern Builder", padding="10")
+        pattern_frame.pack(fill=X, pady=5)
+
+        pattern_grid = ttk.Frame(pattern_frame)
+        pattern_grid.pack(fill=X, expand=True)
+
+        # Columns selection
+        ttk.Label(pattern_grid, text="Columns to include:").grid(
+            row=0, column=0, sticky=W, pady=2)
+
+        # Available columns dropdown
+        self.available_columns = ttk.Combobox(
+            pattern_grid, width=15, state="readonly")
+        self.available_columns.grid(row=0, column=1, padx=5, pady=2)
+
+        # Add column button
+        ttk.Button(pattern_grid, text="Add Column", command=self.add_column_to_pattern).grid(
+            row=0, column=2, padx=5, pady=2)
+
+        # Pattern display
+        ttk.Label(pattern_grid, text="Pattern:").grid(
+            row=1, column=0, sticky=W, pady=2)
+        self.pattern_var = StringVar()
+        pattern_entry = ttk.Entry(
+            pattern_grid, textvariable=self.pattern_var, width=40)
+        pattern_entry.grid(row=1, column=1, columnspan=2,
+                           padx=5, pady=2, sticky="ew")
+
+        # Reset pattern button
+        ttk.Button(pattern_grid, text="Reset", command=self.reset_pattern).grid(
+            row=1, column=3, padx=5, pady=2)
+
+        # Separator selection
+        ttk.Label(pattern_grid, text="Separator:").grid(
+            row=2, column=0, sticky=W, pady=2)
+        self.separator_var = StringVar(value="-")
+        separator_options = ["-", "_", ".", " ", ",", ";"]
+        separator_combo = ttk.Combobox(pattern_grid, textvariable=self.separator_var,
+                                       values=separator_options, width=5)
+        separator_combo.grid(row=2, column=1, padx=5, pady=2, sticky="w")
+
+        # Apply pattern button
+        ttk.Button(pattern_grid, text="Apply Pattern", command=self.apply_pattern).grid(
+            row=2, column=2, padx=5, pady=2)
+
+        # Auto-apply pattern checkbox
+        self.auto_apply_pattern = tk.BooleanVar(value=True)
+        ttk.Checkbutton(pattern_grid, text="Auto-apply pattern on file selection",
+                        variable=self.auto_apply_pattern).grid(
+            row=2, column=3, padx=5, pady=2, sticky="w")
+
         # Middle section - paned window for files and excel data
         paned_window = ttk.PanedWindow(main_frame, orient=tk.HORIZONTAL)
         paned_window.pack(fill=BOTH, expand=True, pady=5)
@@ -103,6 +158,27 @@ class ExcelFileRenamerApp:
         # Search box for files
         search_frame = ttk.Frame(files_frame)
         search_frame.pack(fill=X, pady=5)
+
+        # File filter dropdown
+        ttk.Label(search_frame, text="Filter:").pack(side=LEFT, padx=5)
+        extension_values = ["All Files", "PDF Files", "Excel Files",
+                            "Word Files", "Image Files", "Text Files", "Custom..."]
+        self.extension_filter_combo = ttk.Combobox(search_frame, textvariable=self.file_extension_filter,
+                                                   values=extension_values, width=12, state="readonly")
+        self.extension_filter_combo.pack(side=LEFT, padx=5)
+        self.extension_filter_combo.bind(
+            "<<ComboboxSelected>>", self.apply_filter)
+
+        # Custom extension entry (initially hidden)
+        self.custom_extension = StringVar()
+        self.custom_ext_frame = ttk.Frame(search_frame)
+        self.custom_ext_frame.pack(side=LEFT, padx=5)
+        self.custom_ext_entry = ttk.Entry(
+            self.custom_ext_frame, textvariable=self.custom_extension, width=8)
+        self.custom_ext_entry.pack(side=LEFT)
+        ttk.Button(self.custom_ext_frame, text="Apply",
+                   command=self.apply_custom_filter).pack(side=LEFT, padx=2)
+        self.custom_ext_frame.pack_forget()  # Hide initially
 
         ttk.Label(search_frame, text="Search:").pack(side=LEFT, padx=5)
         ttk.Entry(search_frame, textvariable=self.search_term,
@@ -149,80 +225,23 @@ class ExcelFileRenamerApp:
             main_frame, text="Manual Rename", padding="10")
         manual_frame.pack(fill=X, pady=5)
 
-        # Pattern builder section
-        pattern_frame = ttk.LabelFrame(
-            manual_frame, text="Pattern Builder", padding="5")
-        pattern_frame.grid(row=0, column=0, columnspan=4,
-                           sticky="ew", padx=5, pady=5)
-
-        # Columns selection
-        ttk.Label(pattern_frame, text="Columns to include:").grid(
-            row=0, column=0, sticky=W, pady=2)
-
-        # Available columns dropdown
-        self.available_columns = ttk.Combobox(
-            pattern_frame, width=15, state="readonly")
-        self.available_columns.grid(row=0, column=1, padx=5, pady=2)
-
-        # Add column button
-        ttk.Button(pattern_frame, text="Add Column", command=self.add_column_to_pattern).grid(
-            row=0, column=2, padx=5, pady=2)
-
-        # Pattern display
-        ttk.Label(pattern_frame, text="Pattern:").grid(
-            row=1, column=0, sticky=W, pady=2)
-        self.pattern_var = StringVar()
-        pattern_entry = ttk.Entry(
-            pattern_frame, textvariable=self.pattern_var, width=40)
-        pattern_entry.grid(row=1, column=1, columnspan=2,
-                           padx=5, pady=2, sticky="ew")
-
-        # Reset pattern button
-        ttk.Button(pattern_frame, text="Reset", command=self.reset_pattern).grid(
-            row=1, column=3, padx=5, pady=2)
-
-        # Separator selection
-        ttk.Label(pattern_frame, text="Separator:").grid(
-            row=2, column=0, sticky=W, pady=2)
-        self.separator_var = StringVar(value="-")
-        separator_options = ["-", "_", ".", " ", ",", ";"]
-        separator_combo = ttk.Combobox(pattern_frame, textvariable=self.separator_var,
-                                       values=separator_options, width=5)
-        separator_combo.grid(row=2, column=1, padx=5, pady=2, sticky="w")
-
-        # Apply pattern button
-        ttk.Button(pattern_frame, text="Apply Pattern", command=self.apply_pattern).grid(
-            row=2, column=2, padx=5, pady=2)
-
-        # Common patterns
-        ttk.Label(pattern_frame, text="Common patterns:").grid(
-            row=3, column=0, sticky=W, pady=2)
-        common_patterns = ["ID-ProjectName", "ProjectName-ID",
-                           "ID-Status", "Date-ID-ProjectName"]
-        self.common_patterns_combo = ttk.Combobox(
-            pattern_frame, values=common_patterns, width=20)
-        self.common_patterns_combo.grid(
-            row=3, column=1, columnspan=2, padx=5, pady=2, sticky="ew")
-        self.common_patterns_combo.bind(
-            "<<ComboboxSelected>>", self.select_common_pattern)
-
         # Manual rename entry
         ttk.Label(manual_frame, text="Custom Filename:").grid(
-            row=1, column=0, sticky=W, pady=5)
+            row=0, column=0, sticky=W, pady=5)
         self.manual_filename = StringVar()
         self.manual_entry = ttk.Entry(
             manual_frame, textvariable=self.manual_filename, width=40)
-        self.manual_entry.grid(row=1, column=1, padx=5, pady=5, sticky=W)
+        self.manual_entry.grid(row=0, column=1, padx=5, pady=5, sticky=W)
 
         # Keep extension checkbox
         self.keep_extension = tk.BooleanVar(value=True)
         ttk.Checkbutton(manual_frame, text="Keep original extension", variable=self.keep_extension).grid(
-            row=1, column=2, padx=5, pady=5, sticky=W)
+            row=0, column=2, padx=5, pady=5, sticky=W)
 
         # Manual rename button
         self.manual_rename_button = ttk.Button(manual_frame, text="Apply Manual Rename",
                                                command=self.manual_rename, state=tk.DISABLED)
-        self.manual_rename_button.grid(row=1, column=3, padx=5, pady=5)
+        self.manual_rename_button.grid(row=0, column=3, padx=5, pady=5)
 
         # Bottom section - actions
         action_frame = ttk.Frame(main_frame)
@@ -330,6 +349,76 @@ class ExcelFileRenamerApp:
                 "Error", f"Failed to load Excel file: {str(e)}")
             self.status_var.set("Error loading Excel data")
 
+    def apply_filter(self, event=None):
+        """Apply file extension filter based on selected value"""
+        filter_value = self.file_extension_filter.get()
+
+        # Show custom entry field if "Custom..." is selected
+        if filter_value == "Custom...":
+            self.custom_ext_frame.pack(side=LEFT, padx=5)
+            self.custom_ext_entry.focus()
+        else:
+            self.custom_ext_frame.pack_forget()
+            self.filter_files_by_extension(filter_value)
+
+    def apply_custom_filter(self):
+        """Apply custom file extension filter"""
+        custom_ext = self.custom_extension.get().strip()
+        if not custom_ext:
+            messagebox.showinfo(
+                "Info", "Please enter a custom extension (e.g., .pdf)")
+            return
+
+        # Add dot if not provided
+        if not custom_ext.startswith('.'):
+            custom_ext = '.' + custom_ext
+
+        self.filter_files_by_extension(custom_ext)
+
+    def filter_files_by_extension(self, filter_value):
+        """Filter files by extension and update display"""
+        # Map filter values to extensions
+        extension_map = {
+            "All Files": None,
+            "PDF Files": [".pdf"],
+            "Excel Files": [".xlsx", ".xls", ".csv"],
+            "Word Files": [".docx", ".doc"],
+            "Image Files": [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff"],
+            "Text Files": [".txt", ".text", ".md", ".rtf"]
+        }
+
+        # Get extensions to filter by
+        if filter_value in extension_map:
+            extensions = extension_map[filter_value]
+        else:
+            # Custom extension
+            extensions = [filter_value.lower()]
+
+        # Clear listbox
+        self.files_listbox.delete(0, END)
+
+        # Start with all files
+        if not self.all_files_data:
+            # If no scan has been done yet, nothing to filter
+            return
+
+        # Apply filter
+        if extensions is None:  # All Files
+            self.file_list_data = self.all_files_data.copy()
+        else:
+            self.file_list_data = [file for file in self.all_files_data
+                                   if any(file["extension"].lower() == ext.lower() for ext in extensions)]
+
+        # Update listbox
+        for file_data in self.file_list_data:
+            self.files_listbox.insert(END, file_data["name"])
+
+        # Update status
+        extension_text = ", ".join(
+            extensions) if extensions else "all extensions"
+        self.status_var.set(
+            f"Showing {len(self.file_list_data)} files with {extension_text}")
+
     def scan_files(self):
         """Scan files in the source folder"""
         source = self.source_folder.get()
@@ -338,6 +427,7 @@ class ExcelFileRenamerApp:
             return
 
         # Clear current data
+        self.all_files_data = []
         self.file_list_data = []
         self.files_listbox.delete(0, END)
 
@@ -351,7 +441,7 @@ class ExcelFileRenamerApp:
             # Sort files by name
             files.sort(key=lambda x: x.name.lower())
 
-            # Store file data and update listbox
+            # Store file data
             for file_path in files:
                 file_stat = file_path.stat()
                 mod_time = datetime.fromtimestamp(
@@ -366,12 +456,10 @@ class ExcelFileRenamerApp:
                     "mod_time_formatted": mod_time,
                     "extension": file_path.suffix.lower()
                 }
-                self.file_list_data.append(file_data)
+                self.all_files_data.append(file_data)
 
-                # Add to listbox
-                self.files_listbox.insert(END, file_path.name)
-
-            self.status_var.set(f"Found {len(files)} files")
+            # Apply current filter
+            self.filter_files_by_extension(self.file_extension_filter.get())
 
         except Exception as e:
             messagebox.showerror("Error", f"An error occurred: {str(e)}")
@@ -381,19 +469,32 @@ class ExcelFileRenamerApp:
         """Search files by name"""
         search_text = self.search_term.get().lower()
         if not search_text:
-            # If search is empty, show all files
-            self.scan_files()
+            # If search is empty, show all files based on the current filter
+            self.filter_files_by_extension(self.file_extension_filter.get())
             return
 
         # Clear listbox
         self.files_listbox.delete(0, END)
 
+        # Get filtered files first (based on extension)
+        filtered_files = self.file_list_data.copy()
+
         # Filter and display matching files
-        for file_data in self.file_list_data:
+        matching_files = []
+        for file_data in filtered_files:
             if search_text in file_data["name"].lower():
+                matching_files.append(file_data)
                 self.files_listbox.insert(END, file_data["name"])
 
-        self.status_var.set(f"Found {self.files_listbox.size()} matches")
+        # Update the file_list_data to only include search matches
+        self.file_list_data = matching_files
+
+        # Update status message with both filter and search info
+        filter_text = self.file_extension_filter.get()
+        if filter_text == "Custom...":
+            filter_text = self.custom_extension.get()
+        self.status_var.set(
+            f"Found {len(matching_files)} matches for '{search_text}' with filter '{filter_text}'")
 
     def on_file_select(self, event):
         """Handle file selection from listbox"""
@@ -424,6 +525,7 @@ class ExcelFileRenamerApp:
 
             # Try different matching strategies
             match_found = False
+            matched_item = None
 
             # Clear previous selection
             for item in self.excel_tree.selection():
@@ -440,6 +542,7 @@ class ExcelFileRenamerApp:
                     self.excel_tree.selection_set(item)
                     self.excel_tree.see(item)
                     match_found = True
+                    matched_item = item
                     self.update_details(item)
                     break
 
@@ -455,12 +558,34 @@ class ExcelFileRenamerApp:
                         self.excel_tree.selection_set(item)
                         self.excel_tree.see(item)
                         match_found = True
+                        matched_item = item
                         self.update_details(item)
                         break
 
             if match_found:
                 self.status_var.set(f"Found match for {selected_filename}")
                 self.rename_button.config(state=tk.NORMAL)
+
+                # Auto-apply pattern if enabled and we have a pattern
+                if self.auto_apply_pattern.get() and self.pattern_var.get() and matched_item:
+                    custom_name = self.generate_filename_from_pattern(
+                        matched_item)
+                    if custom_name and self.selected_file:  # Check if selected_file is not None
+                        self.manual_filename.set(custom_name)
+                        self.status_var.set(
+                            f"Auto-applied pattern: {custom_name}")
+
+                        # Also update the details to show the pattern-based filename
+                        if self.selected_file:  # Double-check selected_file before accessing it
+                            extension = self.selected_file["extension"]
+                            if self.keep_extension.get():
+                                preview = f"{custom_name}{extension}"
+                            else:
+                                preview = custom_name
+
+                            # Add preview to details
+                            self.details_label.config(
+                                text=self.details_label.cget("text") + f"\n\nPattern-based filename: {preview}")
             else:
                 self.status_var.set(f"No match found for {selected_filename}")
                 self.details_label.config(
@@ -477,7 +602,13 @@ class ExcelFileRenamerApp:
 
         # Get Excel row data
         values = self.excel_tree.item(item)["values"]
-        columns = list(self.excel_data.columns)  # type: ignore
+
+        # Make sure excel_data is not None before accessing columns
+        if self.excel_data is None:
+            columns = []
+        else:
+            columns = list(self.excel_data.columns)
+
         excel_data_dict = {columns[i]: values[i] for i in range(len(columns))}
 
         # Format file details
@@ -666,24 +797,22 @@ class ExcelFileRenamerApp:
 
     def select_common_pattern(self, event):
         """Select a common pattern from the dropdown"""
-        pattern = self.common_patterns_combo.get()
+        pattern = self.common_patterns_combo.get()  # type: ignore
         if pattern:
             self.pattern_var.set(pattern)
 
-    def apply_pattern(self):
-        """Apply the current pattern to create a filename"""
-        if not self.selected_file or not self.excel_tree.selection():
-            messagebox.showerror("Error", "No file or Excel entry selected")
-            return
-
+    def generate_filename_from_pattern(self, excel_item):
+        """Generate a filename based on the current pattern and Excel data"""
         if not self.pattern_var.get():
-            messagebox.showerror(
-                "Error", "Pattern is empty. Please add columns to your pattern.")
-            return
+            return None
 
         # Get Excel row data
-        selected_item = self.excel_tree.selection()[0]
-        values = self.excel_tree.item(selected_item)["values"]
+        values = self.excel_tree.item(excel_item)["values"]
+
+        # Make sure excel_data is not None before accessing columns
+        if self.excel_data is None:
+            return None
+
         columns = list(self.excel_data.columns)
         excel_data_dict = {columns[i]: values[i] for i in range(len(columns))}
 
@@ -700,16 +829,38 @@ class ExcelFileRenamerApp:
                 value = re.sub(r'[\\/*?:"<>|]', '_', value)
                 filename_parts.append(value)
             else:
-                messagebox.showwarning(
-                    "Warning", f"Column '{part}' not found in Excel data")
-                return
+                self.status_var.set(
+                    f"Warning: Column '{part}' not found in Excel data")
+                return None
 
         # Join the parts with the separator
         custom_name = self.separator_var.get().join(filename_parts)
 
         # Handle empty result
         if not custom_name:
-            messagebox.showerror("Error", "Generated filename is empty")
+            return None
+
+        return custom_name
+
+    def apply_pattern(self):
+        """Apply the current pattern to create a filename"""
+        if not self.selected_file or not self.excel_tree.selection():
+            messagebox.showerror("Error", "No file or Excel entry selected")
+            return
+
+        if not self.pattern_var.get():
+            messagebox.showerror(
+                "Error", "Pattern is empty. Please add columns to your pattern.")
+            return
+
+        # Get selected Excel item
+        selected_item = self.excel_tree.selection()[0]
+
+        # Generate filename from pattern
+        custom_name = self.generate_filename_from_pattern(selected_item)
+        if not custom_name:
+            messagebox.showerror(
+                "Error", "Failed to generate filename from pattern")
             return
 
         # Update the manual filename field
