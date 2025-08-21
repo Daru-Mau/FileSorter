@@ -166,13 +166,17 @@ df.to_excel(test_dir / "comprehensive_project_database.xlsx", index=False)
 print("Created Excel file with project data")
 
 # Define file types and their extensions
-file_types = {
+""" file_types = {
     "Document": [".docx", ".doc", ".pdf", ".txt"],
     "Spreadsheet": [".xlsx", ".xls", ".csv"],
     "Presentation": [".pptx", ".ppt"],
     "Image": [".jpg", ".png", ".gif"],
     "Archive": [".zip", ".rar"],
     "Data": [".json", ".xml"]
+} """
+
+file_types = {
+    "Document": [".pdf"],
 }
 
 # Document types and their descriptions
