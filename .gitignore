@@ -1,0 +1,105 @@
+# Python specific
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+.project
+.pydevproject
+.settings/
+
+# PyInstaller
+*.manifest
+*.spec
+build/
+dist/
+ANTIVIRUS_INFO.txt
+
+# Windows specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Project specific
+file_sorter_icon.ico
+*.exe
+testFiles/*.pdf
+testFiles/*.txt
+testFiles/*.docx
+testFiles/*.xlsx
+testFiles/*.png
+testFiles/*.jpg
+testFiles/*.jpeg
+!testFiles/README.md
+
+# Build artifacts
+installer/
+*.pyz
+*.pyzw
+FileSorter.spec
+warn-FileSorter.txt
+xref-FileSorter.html
+file_version_info.txt
+
+# Documentation generated for distribution
+defender_exclusion_instructions.md
+code_signing_guide.md
+installer_script.iss
+
+# Build scripts
+build_exe.py
+build_exe_improved.py
+create_icon.py
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+*.bak
+*.log
+
+# Certificate files (if you implement code signing)
+*.pfx
+*.p12
+*.pem
+*.cer
+
+# Keep specific files that should be version controlled
+!requirements.txt
+!run_app.py
+!create_test_files.py
+!clean_test_files.py
