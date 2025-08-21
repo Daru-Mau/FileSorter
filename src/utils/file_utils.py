@@ -42,11 +42,6 @@ def scan_directory(directory_path: str) -> List[FileModel]:
     return files
 
 
-# type: ignore
-# type: ignore
-# type: ignore
-# type: ignore
-# type: ignore
 def filter_files_by_extension(files: List[FileModel], extensions: List[str] = None) -> List[FileModel]:
     """
     Filter files by extension

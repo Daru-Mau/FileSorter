@@ -170,9 +170,6 @@ class MainWindow:
 
                 self.status_var.set(
                     # type: ignore
-                    # type: ignore
-                    # type: ignore
-                    # type: ignore
                     f"Loaded {len(self.excel_panel.excel_model.data)} rows from Excel")
             else:
                 self.status_var.set("Error loading Excel data")

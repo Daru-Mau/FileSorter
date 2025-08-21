@@ -21,9 +21,6 @@ class PatternBuilder:
     """UI component for building filename patterns"""
 
     # type: ignore
-    # type: ignore
-    # type: ignore
-    # type: ignore
     def __init__(self, parent, on_pattern_applied: Callable[[str], None] = None):
         """
         Initialize the pattern builder

@@ -23,9 +23,6 @@ class ExcelPanel:
     """UI component for displaying Excel data"""
 
     # type: ignore
-    # type: ignore
-    # type: ignore
-    # type: ignore
     def __init__(self, parent, on_excel_row_select: Callable[[int, Dict[str, Any]], None] = None):
         """
         Initialize the Excel panel
