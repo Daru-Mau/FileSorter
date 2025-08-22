@@ -20,6 +20,10 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+.pytest_cache/
+pytest_cache/
+.coverage
+htmlcov/
 
 # Virtual Environment
 .venv/
@@ -41,6 +45,9 @@ ENV/
 build/
 dist/
 ANTIVIRUS_INFO.txt
+FileSorter_clean_build/
+FileSorter_clean_build.zip
+clean_build_env/
 
 # Windows specific
 Thumbs.db
@@ -65,6 +72,14 @@ testFiles/*.png
 testFiles/*.jpg
 testFiles/*.jpeg
 !testFiles/README.md
+test_files/*.pdf
+test_files/*.txt
+test_files/*.docx
+test_files/*.xlsx
+test_files/*.png
+test_files/*.jpg
+test_files/*.jpeg
+!test_files/README.md
 
 # Build artifacts
 installer/
@@ -84,6 +99,9 @@ installer_script.iss
 build_exe.py
 build_exe_improved.py
 create_icon.py
+clean_build.py
+verify_excel_and_create_pdfs.py
+comprehensive_project_database.xlsx
 
 # Temporary files
 temp/
@@ -103,3 +121,5 @@ tmp/
 !run_app.py
 !create_test_files.py
 !clean_test_files.py
+!create_excel.py
+!av_false_positive_guide.md
